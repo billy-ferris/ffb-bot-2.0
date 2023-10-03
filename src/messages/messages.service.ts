@@ -8,22 +8,16 @@ export class MessagesService {
   async handleAllPlayStandings() {
     const standings = this.leagueService
       .getAllPlayStandings()
-      .map(({ team, wins, losses }, index) => {
-        const teamName = team.name.trim();
-        const teamRecord = `${wins}-${losses}`;
-        const percentage = (wins / (wins + losses)) * 100;
-        const formattedPercentage = `${percentage.toFixed(1)}%`;
+      .map(({ name, wins, losses, seed, winPercentage }) => {
+        const record = `${wins}-${losses}`;
+        const formattedPercentage = `${winPercentage.toFixed(1)}%`;
 
-        return `${
-          index + 1
-        }. ${teamName} | ${teamRecord} | ${formattedPercentage}`;
+        return `${seed}. ${name} | ${record} | ${formattedPercentage}`;
       });
 
-    return [
-      'All-Play Standings',
-      '————————————————————',
-      standings.join('\n'),
-    ].join('\n');
+    const header = ['All-Play Standings', '————————————————————'].join('\n');
+
+    return [header, ...standings].join('\n');
   }
 
   async handleActualStandings() {
@@ -36,10 +30,8 @@ export class MessagesService {
         return `${seed}. ${name} | ${record} | ${formattedPercentage}`;
       });
 
-    return [
-      'Actual Standings',
-      '————————————————————',
-      standings.join('\n'),
-    ].join('\n');
+    const header = ['Actual Standings', '————————————————————'].join('\n');
+
+    return [header, ...standings].join('\n');
   }
 }

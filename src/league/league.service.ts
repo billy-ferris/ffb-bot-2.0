@@ -49,7 +49,7 @@ export class LeagueService {
 
       return {
         seed: team.playoffSeed,
-        name: team.name,
+        name: team.name.trim(),
         wins,
         losses,
         winPercentage,
@@ -59,27 +59,39 @@ export class LeagueService {
   }
 
   public getAllPlayStandings() {
-    const standings: {
-      team: ITeam;
-      wins: number;
-      losses: number;
-    }[] = [];
     const week = this.league.scoringPeriodId - 1;
 
-    const teamsSorted = this.league.teams.slice().sort((a, b) => a.id - b.id);
+    const standings = this.league.teams.map((team) => {
+      const record = this.getTeamAllPlayRecord(week, team, this.league.teams);
+      return {
+        team,
+        wins: record.wins,
+        losses: record.losses,
+      };
+    });
 
-    for (const team of teamsSorted) {
-      const record = this.getTeamAllPlayRecord(week, team, teamsSorted);
-      standings.push(record);
-    }
-
-    return standings.sort((a, b) => {
+    standings.sort((a, b) => {
       if (a.wins === b.wins) {
         return (
           b.team.record.overall.pointsFor - a.team.record.overall.pointsFor
         );
       }
       return b.wins - a.wins;
+    });
+
+    return standings.map((record, index) => {
+      const seed = index + 1;
+      const wins = record.wins;
+      const losses = record.losses;
+      const winPercentage = (wins / (wins + losses)) * 100;
+
+      return {
+        seed,
+        name: record.team.name.trim(),
+        wins,
+        losses,
+        winPercentage,
+      };
     });
   }
 
@@ -132,21 +144,20 @@ export class LeagueService {
         i + 1,
       ).matchupPointsFor;
 
-      for (const opponentTeam of teamsSorted) {
-        if (opponentTeam.id !== team.id) {
-          const opponentPoints = this.calculateMatchupPoints(
-            opponentTeam.id,
-            i + 1,
-          ).matchupPointsFor;
+      for (const opponentTeam of teamsSorted.filter((t) => t.id !== team.id)) {
+        const opponentPoints = this.calculateMatchupPoints(
+          opponentTeam.id,
+          i + 1,
+        ).matchupPointsFor;
 
-          if (teamPoints > opponentPoints) {
-            wins++;
-          } else {
-            losses++;
-          }
+        if (teamPoints > opponentPoints) {
+          wins++;
+        } else {
+          losses++;
         }
       }
     }
+
     return {
       team,
       wins,
