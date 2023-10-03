@@ -41,7 +41,24 @@ export class LeagueService {
     return data;
   }
 
-  public getAllPlayRecords() {
+  public getActualStandings() {
+    const standings = this.league.teams.map((team) => {
+      const wins = team.record.overall.wins;
+      const losses = team.record.overall.losses;
+      const winPercentage = (wins / (wins + losses)) * 100;
+
+      return {
+        seed: team.playoffSeed,
+        name: team.name,
+        wins,
+        losses,
+        winPercentage,
+      };
+    });
+    return standings.sort((a, b) => a.seed - b.seed);
+  }
+
+  public getAllPlayStandings() {
     const standings: {
       team: ITeam;
       wins: number;
@@ -146,9 +163,14 @@ export class LeagueService {
         currentTeam.record.overall.pointsFor /
         (currentTeam.record.overall.wins + currentTeam.record.overall.losses);
 
+      const winsWeight =
+        currentTeam.record.overall.wins /
+        (currentTeam.record.overall.wins + currentTeam.record.overall.losses);
+
       const powerRanking = (
-        dominanceValues[i] * 0.8 +
-        averageScore * 0.2
+        dominanceValues[i] * 0.4 +
+        averageScore * 0.2 +
+        winsWeight * 0.4
       ).toFixed(2);
       powerRankings.push(powerRanking);
     }

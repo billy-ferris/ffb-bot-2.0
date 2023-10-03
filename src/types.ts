@@ -9,6 +9,10 @@ export interface ITeam {
       ties: number;
       pointsFor: number;
       pointsAgainst: number;
+      gamesBack: number;
+      percentage: number;
+      streakLength: number;
+      streakType: 'WIN' | 'LOSS';
     };
   };
   playoffSeed: number;

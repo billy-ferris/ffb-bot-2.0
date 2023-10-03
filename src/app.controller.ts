@@ -1,17 +1,17 @@
 import { Controller, Get } from '@nestjs/common';
-import { LeagueService } from './league/league.service';
+import { MessagesService } from './messages/messages.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly leagueService: LeagueService) {}
-
-  @Get('/power')
-  getPowerRankings() {
-    return this.leagueService.getPowerRankings();
-  }
+  constructor(private readonly messagesService: MessagesService) {}
 
   @Get('/all')
   getAllPlayRecords() {
-    return this.leagueService.getAllPlayRecords();
+    return this.messagesService.handleAllPlayStandings();
+  }
+
+  @Get('/actual')
+  getActualRecords() {
+    return this.messagesService.handleActualStandings();
   }
 }
