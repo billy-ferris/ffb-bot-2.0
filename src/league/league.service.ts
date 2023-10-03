@@ -166,30 +166,24 @@ export class LeagueService {
   }
 
   private calculatePowerRankings(dominanceValues: number[], teams: ITeam[]) {
-    const powerRankings: string[] = [];
+    return dominanceValues
+      .map((dominance, i) => {
+        const currentTeam = teams[i];
+        const { wins, losses, pointsFor } = currentTeam.record.overall;
 
-    for (let i = 0; i < dominanceValues.length; i++) {
-      const currentTeam = teams[i];
-      const averageScore =
-        currentTeam.record.overall.pointsFor /
-        (currentTeam.record.overall.wins + currentTeam.record.overall.losses);
+        const averageScore = pointsFor / (wins + losses);
+        const winsWeight = wins / (wins + losses);
+        const powerRanking = (
+          dominance * 0.4 +
+          averageScore * 0.2 +
+          winsWeight * 0.4
+        ).toFixed(2);
 
-      const winsWeight =
-        currentTeam.record.overall.wins /
-        (currentTeam.record.overall.wins + currentTeam.record.overall.losses);
-
-      const powerRanking = (
-        dominanceValues[i] * 0.4 +
-        averageScore * 0.2 +
-        winsWeight * 0.4
-      ).toFixed(2);
-      powerRankings.push(powerRanking);
-    }
-    return powerRankings
-      .map((powerRanking, index) => ({
-        points: parseFloat(powerRanking),
-        team: teams[index],
-      }))
+        return {
+          points: parseFloat(powerRanking),
+          team: currentTeam,
+        };
+      })
       .sort((a, b) => b.points - a.points);
   }
 
