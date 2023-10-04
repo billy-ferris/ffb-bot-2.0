@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { ILeagueInfo, ITeam } from '../types';
+import { ILeagueInfo, IPlayer, ITeam } from '../types';
 
 @Injectable()
 export class LeagueService {
@@ -39,6 +39,36 @@ export class LeagueService {
       }),
     );
     return data;
+  }
+
+  public getPlayersOnTradeBlockByTeam() {
+    const teamsWithPlayersOnTradeBlock: {
+      team: ITeam;
+      players: IPlayer[];
+    }[] = [];
+
+    for (const team of this.league.teams) {
+      const tradeBlock = team.tradeBlock.players;
+
+      const playersOnTradeBlock: IPlayer[] = [];
+
+      for (const playerId in tradeBlock) {
+        const player = this.getPlayerFromTeamRosterById(team, playerId);
+
+        if (player) {
+          playersOnTradeBlock.push(player);
+        }
+      }
+
+      if (playersOnTradeBlock.length > 0) {
+        teamsWithPlayersOnTradeBlock.push({
+          team,
+          players: playersOnTradeBlock,
+        });
+      }
+    }
+
+    return teamsWithPlayersOnTradeBlock;
   }
 
   public getActualStandings() {
@@ -247,5 +277,13 @@ export class LeagueService {
     }
 
     return result;
+  }
+
+  private getPlayerFromTeamRosterById(team: ITeam, playerId: string) {
+    const entry = team.roster.entries.find(
+      (entry) => entry.playerId === Number(playerId),
+    );
+
+    return entry ? entry.playerPoolEntry.player : null;
   }
 }

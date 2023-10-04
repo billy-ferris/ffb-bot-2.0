@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { LeagueService } from '../league/league.service';
+import { nflTeamIdToNFLTeamAbbreviation } from '../constants';
+import { IPlayer } from '../types';
 
 @Injectable()
 export class MessagesService {
@@ -33,5 +35,28 @@ export class MessagesService {
     const header = ['Actual Standings', '————————————————————'].join('\n');
 
     return [header, ...standings].join('\n');
+  }
+
+  async handleTradeBlock() {
+    const tradeBlock = this.leagueService
+      .getPlayersOnTradeBlockByTeam()
+      .map(({ team, players }) => {
+        const playerStrings = this.formatPlayerStrings(players);
+        return [team.name, playerStrings].join(': ');
+      });
+
+    const header = ['Trade Block', '————————————————————'].join('\n');
+    return [header, ...tradeBlock].join('\n');
+  }
+
+  private formatPlayerStrings(players: IPlayer[]) {
+    return players
+      .map(
+        (player) =>
+          `${nflTeamIdToNFLTeamAbbreviation[player.proTeamId]} ${
+            player.firstName.split('')[0]
+          }. ${player.lastName}`,
+      )
+      .join(', ');
   }
 }

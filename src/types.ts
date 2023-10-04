@@ -1,3 +1,11 @@
+interface ITradeBlock {
+  players: Record<IPlayerEntry['playerId'], ['ON_THE_BLOCK']>;
+}
+
+interface IRoster {
+  entries: IPlayerEntry[];
+}
+
 export interface ITeam {
   id: number;
   name: string;
@@ -16,22 +24,26 @@ export interface ITeam {
     };
   };
   playoffSeed: number;
+  tradeBlock: ITradeBlock;
+  roster: IRoster;
 }
 
 export interface IPlayer {
+  id: number;
+  eligibleSlots: number[];
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  proTeamId: number;
+}
+
+export interface IPlayerEntry {
   lineupSlotId: number;
   playerId: number;
   playerPoolEntry: {
     appliedStatTotal: number;
     onTeamId: number;
-    player: {
-      id: number;
-      eligibleSlots: number[];
-      firstName: string;
-      lastName: string;
-      fullName: string;
-      proTeamId: number;
-    };
+    player: IPlayer;
   };
 }
 
@@ -41,7 +53,7 @@ export interface IMatchupTeam {
   totalPointsLive: number;
   totalProjectedPointsLive: number;
   rosterForCurrentScoringPeriod: {
-    entries: IPlayer[];
+    entries: IPlayerEntry[];
   };
 }
 
