@@ -1,26 +1,31 @@
 import { Controller, Get } from '@nestjs/common';
 import { MessagesService } from './messages/messages.service';
 import { LeagueService } from './league/league.service';
+import { GroupMeService } from './groupme/groupme.service';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly messagesService: MessagesService,
     private readonly leagueService: LeagueService,
+    private readonly groupmeService: GroupMeService,
   ) {}
 
   @Get('/all')
-  getAllPlayRecords() {
-    return this.messagesService.handleAllPlayStandings();
+  async getAllPlayRecords() {
+    const message = await this.messagesService.handleAllPlayStandings();
+    return this.groupmeService.postMessage(message);
   }
 
   @Get('/actual')
-  getActualRecords() {
-    return this.messagesService.handleActualStandings();
+  async getActualRecords() {
+    const message = await this.messagesService.handleActualStandings();
+    return this.groupmeService.postMessage(message);
   }
 
   @Get('/block')
-  getTradeBlock() {
-    return this.messagesService.handleTradeBlock();
+  async getTradeBlock() {
+    const message = await this.messagesService.handleTradeBlock();
+    return this.groupmeService.postMessage(message);
   }
 }
