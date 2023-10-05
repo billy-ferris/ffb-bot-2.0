@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { MessagesService } from './messages/messages.service';
 import { LeagueService } from './league/league.service';
 import { GroupMeService } from './groupme/groupme.service';
@@ -10,6 +10,11 @@ export class AppController {
     private readonly leagueService: LeagueService,
     private readonly groupmeService: GroupMeService,
   ) {}
+
+  @Post('/bot')
+  getMessage(@Body() data: Record<string, any>) {
+    console.log(data);
+  }
 
   @Get('/all')
   async getAllPlayRecords() {
