@@ -2,20 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ILeagueInfo, IPlayer, ITeam } from '../types';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class LeagueService {
-  // TODO: move envs to .env
-  private leagueId: string = '56951748';
-  private year: string = '2023';
-  private espnS2: string =
-    'AEAsCXK9bkxLyDJJJHSoD35LQMjPzZDSGK83MoJazUi8PpnOlmAOBK7B0U6tCo9uGYchDrIzA0%2Fs%2F%2FgG%2Fl%2FpbObQM5g8pTuBA8QXpLafgra2xWtXIS6Dda66YPuI2ej0XYKUqIk1%2F9jtipkHXQ4Dy14gxPI2GvmQjHXVWJZlt6Z4dK%2B%2FW4tllofAjCzqA6h47uXEqbOKVjxNT7p%2F3g7qlA9piL4nBOPcZyYBtcEpwCzy2tHv3iirieh5XN26hluMhGlUkVQegCXj6BlE%2BeTQwlGsR0ErChiVX9o5vQ9umI6NeTVoKOG5xLJL0SKV5NqqLBkoWFmcNybC5da3L9eiJ3tQ';
-  private swid: string = '{CE676C7D-522B-43FF-8250-063992158A9D}';
+  private leagueId: string = this.configService.get<string>('LEAGUE_ID');
+  private year: string = this.configService.get<string>('SEASON_ID');
+  private espnS2: string = this.configService.get<string>('ESPN_S2');
+  private swid: string = this.configService.get<string>('SWID');
   private endpoint: string = 'https://fantasy.espn.com/apis/v3/games/ffl';
 
   public league: ILeagueInfo;
 
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {
     void this.initialize();
   }
 
