@@ -33,46 +33,6 @@ export class LeagueService {
     return data;
   }
 
-  public async getPlayersOnTradeBlockByTeam() {
-    if (!this.league) {
-      this.league = await this.getLeague();
-    }
-
-    const teamsWithPlayersOnTradeBlock: {
-      team: ITeam;
-      players: IPlayer[];
-    }[] = [];
-
-    for (const team of this.league.teams) {
-      const tradeBlock = team.tradeBlock?.players || {};
-      const onTheBlockPlayers = Object.fromEntries(
-        Object.entries(tradeBlock).filter(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          ([_, status]) => status === TradeBlockStatus.ON_THE_BLOCK,
-        ),
-      );
-
-      const playersOnTradeBlock: IPlayer[] = [];
-
-      for (const playerId in onTheBlockPlayers) {
-        const player = this.getPlayerFromTeamRosterById(team, playerId);
-
-        if (player) {
-          playersOnTradeBlock.push(player);
-        }
-      }
-
-      if (playersOnTradeBlock.length > 0) {
-        teamsWithPlayersOnTradeBlock.push({
-          team,
-          players: playersOnTradeBlock,
-        });
-      }
-    }
-
-    return teamsWithPlayersOnTradeBlock;
-  }
-
   public async getActualStandings() {
     if (!this.league) {
       this.league = await this.getLeague();
@@ -136,6 +96,46 @@ export class LeagueService {
     });
   }
 
+  public async getPlayersOnTradeBlockByTeam() {
+    if (!this.league) {
+      this.league = await this.getLeague();
+    }
+
+    const teamsWithPlayersOnTradeBlock: {
+      team: ITeam;
+      players: IPlayer[];
+    }[] = [];
+
+    for (const team of this.league.teams) {
+      const tradeBlock = team.tradeBlock?.players || {};
+      const onTheBlockPlayers = Object.fromEntries(
+        Object.entries(tradeBlock).filter(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          ([_, status]) => status === TradeBlockStatus.ON_THE_BLOCK,
+        ),
+      );
+
+      const playersOnTradeBlock: IPlayer[] = [];
+
+      for (const playerId in onTheBlockPlayers) {
+        const player = this.getPlayerFromTeamRosterById(team, playerId);
+
+        if (player) {
+          playersOnTradeBlock.push(player);
+        }
+      }
+
+      if (playersOnTradeBlock.length > 0) {
+        teamsWithPlayersOnTradeBlock.push({
+          team,
+          players: playersOnTradeBlock,
+        });
+      }
+    }
+
+    return teamsWithPlayersOnTradeBlock;
+  }
+
   public getPowerRankings() {
     const winMatrix: number[][] = [];
 
@@ -171,13 +171,44 @@ export class LeagueService {
     return this.calculatePowerRankings(dominanceMatrix, sortedTeams);
   }
 
+  public async getHighestScoringTeamForWeek(week?: number) {
+    if (!this.league) {
+      this.league = await this.getLeague();
+    }
+    const previousWeek = this.league.scoringPeriodId - 1;
+
+    if (!week || week <= 0 || week >= previousWeek) {
+      week = previousWeek;
+    }
+
+    const { team, score } = this.league.teams.reduce(
+      (highestScoringTeam, team) => {
+        const matchupPoints = this.calculateMatchupPoints(
+          team.id,
+          week,
+        ).matchupPointsFor;
+
+        return matchupPoints > highestScoringTeam.score
+          ? { team, score: matchupPoints }
+          : highestScoringTeam;
+      },
+      { team: null, score: 0 },
+    );
+
+    return {
+      name: team.name,
+      score,
+    };
+  }
+
   public async getLuckiestTeamForWeek(week?: number) {
     if (!this.league) {
       this.league = await this.getLeague();
     }
+    const previousWeek = this.league.scoringPeriodId - 1;
 
-    if (!week) {
-      week = this.league.scoringPeriodId - 1;
+    if (!week || week <= 0 || week >= previousWeek) {
+      week = previousWeek;
     }
 
     const teamsWithWins: ITeam[] = this.league.teams.filter((team) => {
