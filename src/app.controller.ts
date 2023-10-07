@@ -12,8 +12,9 @@ export class AppController {
   ) {}
 
   @Post('/bot')
-  getMessage(@Body() data: Record<string, any>) {
-    console.log(data);
+  processMessage(@Body() msg: { text: string }) {
+    console.log(msg);
+    this.groupmeService.processMessage(msg);
   }
 
   @Get('/all')
