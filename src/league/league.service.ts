@@ -186,17 +186,25 @@ export class LeagueService {
     });
 
     let luckiestTeam: ITeam;
-    let minAllPlayWins = this.league.teams.length - 1;
+    let minAllPlayRecord = { wins: this.league.teams.length - 1, losses: 0 };
 
     for (const team of teamsWithWins) {
       const allPlayRecord = this.getTeamAllPlayRecordForWeek(week, team);
-      if (allPlayRecord.wins < minAllPlayWins) {
-        minAllPlayWins = allPlayRecord.wins;
+      if (allPlayRecord.wins < minAllPlayRecord.wins) {
+        minAllPlayRecord = allPlayRecord;
         luckiestTeam = team;
       }
     }
+    const wins = minAllPlayRecord.wins;
+    const losses = minAllPlayRecord.losses;
+    const winPercentage = (wins / (wins + losses)) * 100;
 
-    return luckiestTeam;
+    return {
+      name: luckiestTeam.name.trim(),
+      wins,
+      losses,
+      winPercentage,
+    };
   }
 
   private getTeamAllPlayRecordForSeason(team: ITeam) {
