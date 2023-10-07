@@ -1,5 +1,10 @@
+export enum TradeBlockStatus {
+  ON_THE_BLOCK = 'ON_THE_BLOCK',
+  NORMAL = 'NORMAL',
+}
+
 interface ITradeBlock {
-  players: Record<IPlayerEntry['playerId'], ['ON_THE_BLOCK']>;
+  players: Record<IPlayerEntry['playerId'], TradeBlockStatus>;
 }
 
 interface IRoster {
@@ -24,7 +29,7 @@ export interface ITeam {
     };
   };
   playoffSeed: number;
-  tradeBlock: ITradeBlock;
+  tradeBlock?: ITradeBlock;
   roster: IRoster;
 }
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { ILeagueInfo, IPlayer, ITeam } from '../types';
+import { ILeagueInfo, IPlayer, ITeam, TradeBlockStatus } from '../types';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -17,17 +17,7 @@ export class LeagueService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-  ) {
-    void this.initialize();
-  }
-
-  private async initialize() {
-    try {
-      this.league = await this.getLeague();
-    } catch (error) {
-      console.error('Error initializing team data:', error);
-    }
-  }
+  ) {}
 
   private async getLeague(
     params = '?view=mMatchupScore&view=mTeam&view=mRoster',
@@ -43,18 +33,28 @@ export class LeagueService {
     return data;
   }
 
-  public getPlayersOnTradeBlockByTeam() {
+  public async getPlayersOnTradeBlockByTeam() {
+    if (!this.league) {
+      this.league = await this.getLeague();
+    }
+
     const teamsWithPlayersOnTradeBlock: {
       team: ITeam;
       players: IPlayer[];
     }[] = [];
 
     for (const team of this.league.teams) {
-      const tradeBlock = team.tradeBlock.players;
+      const tradeBlock = team.tradeBlock?.players || {};
+      const onTheBlockPlayers = Object.fromEntries(
+        Object.entries(tradeBlock).filter(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          ([_, status]) => status === TradeBlockStatus.ON_THE_BLOCK,
+        ),
+      );
 
       const playersOnTradeBlock: IPlayer[] = [];
 
-      for (const playerId in tradeBlock) {
+      for (const playerId in onTheBlockPlayers) {
         const player = this.getPlayerFromTeamRosterById(team, playerId);
 
         if (player) {
@@ -73,7 +73,11 @@ export class LeagueService {
     return teamsWithPlayersOnTradeBlock;
   }
 
-  public getActualStandings() {
+  public async getActualStandings() {
+    if (!this.league) {
+      this.league = await this.getLeague();
+    }
+
     const standings = this.league.teams.map((team) => {
       const wins = team.record.overall.wins;
       const losses = team.record.overall.losses;
@@ -90,11 +94,16 @@ export class LeagueService {
     return standings.sort((a, b) => a.seed - b.seed);
   }
 
-  public getAllPlayStandings() {
-    const week = this.league.scoringPeriodId - 1;
+  public async getAllPlayRecords(week?: number) {
+    if (!this.league) {
+      this.league = await this.getLeague();
+    }
 
     const standings = this.league.teams.map((team) => {
-      const record = this.getTeamAllPlayRecord(week, team, this.league.teams);
+      const record = week
+        ? this.getTeamAllPlayRecordForWeek(week, team)
+        : this.getTeamAllPlayRecordForSeason(team);
+
       return {
         team,
         wins: record.wins,
@@ -162,27 +171,102 @@ export class LeagueService {
     return this.calculatePowerRankings(dominanceMatrix, sortedTeams);
   }
 
-  private getTeamAllPlayRecord(
-    week: number,
-    team: ITeam,
-    teamsSorted: ITeam[],
-  ) {
+  public async getLuckiestTeamForWeek(week?: number) {
+    if (!this.league) {
+      this.league = await this.getLeague();
+    }
+
+    if (!week) {
+      week = this.league.scoringPeriodId - 1;
+    }
+
+    const teamsWithWins: ITeam[] = this.league.teams.filter((team) => {
+      const { wins, losses } = this.getTeamActualRecordForWeek(week, team);
+      return wins > losses;
+    });
+
+    let luckiestTeam: ITeam;
+    let minAllPlayWins = this.league.teams.length - 1;
+
+    for (const team of teamsWithWins) {
+      const allPlayRecord = this.getTeamAllPlayRecordForWeek(week, team);
+      if (allPlayRecord.wins < minAllPlayWins) {
+        minAllPlayWins = allPlayRecord.wins;
+        luckiestTeam = team;
+      }
+    }
+
+    return luckiestTeam;
+  }
+
+  private getTeamAllPlayRecordForSeason(team: ITeam) {
     let wins = 0;
     let losses = 0;
 
-    for (let i = 0; i < week; i++) {
-      const teamPoints = this.calculateMatchupPoints(
-        team.id,
-        i + 1,
+    for (let i = 0; i < this.league.scoringPeriodId - 1; i++) {
+      const { wins: weeklyWins, losses: weeklyLosses } =
+        this.getTeamAllPlayRecordForWeek(i + 1, team);
+      wins += weeklyWins;
+      losses += weeklyLosses;
+    }
+
+    return {
+      team,
+      wins,
+      losses,
+    };
+  }
+
+  private getTeamAllPlayRecordForWeek(week: number, team: ITeam) {
+    let wins = 0;
+    let losses = 0;
+
+    const teamPoints = this.calculateMatchupPoints(
+      team.id,
+      week,
+    ).matchupPointsFor;
+
+    for (const opponentTeam of this.league.teams.filter(
+      (t) => t.id !== team.id,
+    )) {
+      const opponentPoints = this.calculateMatchupPoints(
+        opponentTeam.id,
+        week,
       ).matchupPointsFor;
 
-      for (const opponentTeam of teamsSorted.filter((t) => t.id !== team.id)) {
-        const opponentPoints = this.calculateMatchupPoints(
-          opponentTeam.id,
-          i + 1,
-        ).matchupPointsFor;
+      if (teamPoints > opponentPoints) {
+        wins++;
+      } else {
+        losses++;
+      }
+    }
 
-        if (teamPoints > opponentPoints) {
+    return {
+      wins,
+      losses,
+    };
+  }
+
+  private getTeamActualRecordForWeek(week: number, team: ITeam) {
+    let wins = 0;
+    let losses = 0;
+
+    const matchups = this.league.schedule.filter(
+      (matchup) => matchup.matchupPeriodId === week,
+    );
+
+    for (const matchup of matchups) {
+      const homeTeam = matchup.home;
+      const awayTeam = matchup.away;
+
+      if (homeTeam.teamId === team.id) {
+        if (homeTeam.totalPoints > awayTeam.totalPoints) {
+          wins++;
+        } else {
+          losses++;
+        }
+      } else if (awayTeam.teamId === team.id) {
+        if (awayTeam.totalPoints > homeTeam.totalPoints) {
           wins++;
         } else {
           losses++;
@@ -191,7 +275,6 @@ export class LeagueService {
     }
 
     return {
-      team,
       wins,
       losses,
     };

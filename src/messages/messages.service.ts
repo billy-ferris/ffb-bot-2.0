@@ -8,14 +8,14 @@ export class MessagesService {
   constructor(private readonly leagueService: LeagueService) {}
 
   async handleAllPlayStandings() {
-    const standings = this.leagueService
-      .getAllPlayStandings()
-      .map(({ name, wins, losses, seed, winPercentage }) => {
+    const standings = (await this.leagueService.getAllPlayRecords()).map(
+      ({ name, wins, losses, seed, winPercentage }) => {
         const record = `${wins}-${losses}`;
         const formattedPercentage = `${winPercentage.toFixed(1)}%`;
 
         return `${seed}. ${name} | ${record} | ${formattedPercentage}`;
-      });
+      },
+    );
 
     const header = ['All-Play Standings', '————————————————————'].join('\n');
 
@@ -23,14 +23,14 @@ export class MessagesService {
   }
 
   async handleActualStandings() {
-    const standings = this.leagueService
-      .getActualStandings()
-      .map(({ name, wins, losses, seed, winPercentage }) => {
+    const standings = (await this.leagueService.getActualStandings()).map(
+      ({ name, wins, losses, seed, winPercentage }) => {
         const record = `${wins}-${losses}`;
         const formattedPercentage = `${winPercentage.toFixed(1)}%`;
 
         return `${seed}. ${name} | ${record} | ${formattedPercentage}`;
-      });
+      },
+    );
 
     const header = ['Actual Standings', '————————————————————'].join('\n');
 
@@ -38,12 +38,12 @@ export class MessagesService {
   }
 
   async handleTradeBlock() {
-    const tradeBlock = this.leagueService
-      .getPlayersOnTradeBlockByTeam()
-      .map(({ team, players }) => {
-        const playerStrings = this.formatPlayerStrings(players);
-        return [team.name, playerStrings].join(': ');
-      });
+    const tradeBlock = (
+      await this.leagueService.getPlayersOnTradeBlockByTeam()
+    ).map(({ team, players }) => {
+      const playerStrings = this.formatPlayerStrings(players);
+      return [team.name, playerStrings].join(': ');
+    });
 
     const header = ['Trade Block', '————————————————————'].join('\n');
     return [header, ...tradeBlock].join('\n');
