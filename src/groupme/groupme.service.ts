@@ -32,8 +32,6 @@ export class GroupMeService {
   processMessage(msg: { text: string }): void {
     const isCommand = this.isCommand(msg.text);
 
-    console.log({ text: msg.text, isCommand });
-
     if (isCommand) {
       const { cmd } = this.parseCommand(msg.text);
       void this.executeCommand(cmd);
@@ -47,7 +45,7 @@ export class GroupMeService {
   private parseCommand(text: string): { cmd: string; args: string[] } {
     const args = text.trim().substring(1).split(/\s+/);
     const cmd = args.shift().toLowerCase();
-    console.log({ cmd, args });
+    
     return { cmd, args };
   }
 
