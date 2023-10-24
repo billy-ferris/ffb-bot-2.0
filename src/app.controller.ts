@@ -13,7 +13,6 @@ export class AppController {
 
   @Post('/bot')
   processMessage(@Body() msg: { text: string }) {
-    console.log(msg);
     this.groupmeService.processMessage(msg);
   }
 
@@ -29,7 +28,7 @@ export class AppController {
     return this.groupmeService.postMessage(message);
   }
 
-  @Get('/block')
+  @Get('/trade')
   async getTradeBlock() {
     const message = await this.messagesService.handleTradeBlock();
     return this.groupmeService.postMessage(message);
