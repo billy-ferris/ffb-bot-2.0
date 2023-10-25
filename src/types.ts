@@ -55,9 +55,9 @@ export interface IPlayerEntry {
 export interface IMatchupTeam {
   teamId: number;
   totalPoints: number;
-  totalPointsLive: number;
-  totalProjectedPointsLive: number;
-  rosterForCurrentScoringPeriod: {
+  totalPointsLive?: number;
+  totalProjectedPointsLive?: number;
+  rosterForCurrentScoringPeriod?: {
     entries: IPlayerEntry[];
   };
 }

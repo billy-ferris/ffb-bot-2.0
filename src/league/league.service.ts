@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { ILeagueInfo, IPlayer, ITeam, TradeBlockStatus } from '../types';
+import {
+  ILeagueInfo,
+  IMatchup,
+  IMatchupTeam,
+  IPlayer,
+  ITeam,
+  TradeBlockStatus,
+} from '../types';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -31,6 +38,55 @@ export class LeagueService {
       }),
     );
     return data;
+  }
+
+  public async getMatchupsForWeek(week?: number) {
+    const matchups: IMatchup[] = [];
+
+    if (!this.league) {
+      this.league = await this.getLeague();
+    }
+
+    const currentWeek = this.league.scoringPeriodId;
+    if (!week || week <= 0 || week >= currentWeek) {
+      week = currentWeek;
+    }
+
+    for (const matchup of this.league.schedule) {
+      if (matchup.matchupPeriodId === week) {
+        const homeTeam = this.getMatchupTeam(matchup.home, this.league.teams);
+        const awayTeam = this.getMatchupTeam(matchup.away, this.league.teams);
+
+        matchups.push({
+          id: matchup.id,
+          matchupPeriodId: matchup.matchupPeriodId,
+          home: homeTeam,
+          away: awayTeam,
+        });
+      }
+    }
+
+    return matchups;
+  }
+
+  private getMatchupTeam(matchupTeam: IMatchupTeam, teams: ITeam[]) {
+    const team = teams.find((t) => t.id === matchupTeam.teamId);
+
+    if (team) {
+      return {
+        teamId: matchupTeam.teamId,
+        totalPoints: matchupTeam.totalPoints,
+        totalPointsLive: matchupTeam.totalPointsLive,
+        totalProjectedPointsLive: matchupTeam.totalProjectedPointsLive,
+        rosterForCurrentScoringPeriod: matchupTeam.rosterForCurrentScoringPeriod
+          ?.entries
+          ? { entries: matchupTeam.rosterForCurrentScoringPeriod.entries }
+          : undefined,
+        team,
+      };
+    }
+
+    return null;
   }
 
   public async getActualStandings() {
