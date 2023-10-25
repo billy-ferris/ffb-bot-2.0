@@ -114,9 +114,11 @@ export class LeagueService {
     if (!this.league) {
       this.league = await this.getLeague();
     }
+    const isValidWeekArg =
+      !!week && week > 0 && week < this.league.scoringPeriodId;
 
     const standings = this.league.teams.map((team) => {
-      const record = week
+      const record = isValidWeekArg
         ? this.getTeamAllPlayRecordForWeek(week, team)
         : this.getTeamAllPlayRecordForSeason(team);
 
