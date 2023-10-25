@@ -32,11 +32,9 @@ export class GroupMeService {
   processMessage(msg: { text: string }) {
     const isCommand = this.isCommand(msg.text);
 
-    console.log({ text: msg.text, isCommand });
-
     if (isCommand) {
-      const cmd = this.parseCommand(msg.text);
-      void this.executeCommand(cmd);
+      const { cmd, arg } = this.parseCommand(msg.text);
+      void this.executeCommand(cmd, arg);
     }
   }
 
@@ -46,12 +44,17 @@ export class GroupMeService {
 
   private parseCommand(text: string) {
     const args = text.trim().substring(1).split(/\s+/);
-    return args.shift().toLowerCase();
+    const cmd = args.shift().toLowerCase();
+    const arg = args[0];
+
+    return { cmd, arg };
   }
 
-  private async executeCommand(cmd: string) {
+  private async executeCommand(cmd: string, arg: string) {
     const commands = {
       trade: await this.messagesService.handleTradeBlock(),
+      standings: await this.messagesService.handleActualStandings(),
+      allplay: await this.messagesService.handleAllPlayStandings(arg),
     };
 
     if (cmd in commands) {
