@@ -20,7 +20,7 @@ export class MessagesService {
     }
 
     const header = ['All-Play Standings', '————————————————————'].join('\n');
-    return [header, ...standings].join('\n');
+    return [header, ...standings].join('\n\n');
   }
 
   async handleActualStandings() {
@@ -34,7 +34,7 @@ export class MessagesService {
     );
 
     const header = ['Actual Standings', '————————————————————'].join('\n');
-    return [header, ...standings].join('\n');
+    return [header, ...standings].join('\n\n');
   }
 
   async handleTradeBlock() {
@@ -42,11 +42,11 @@ export class MessagesService {
       await this.leagueService.getPlayersOnTradeBlockByTeam()
     ).map(({ team, players }) => {
       const playerStrings = this.formatPlayerStrings(players);
-      return [team.name, playerStrings].join(': ');
+      return [team.name.trim(), playerStrings].join(':\n');
     });
 
     const header = ['Trade Block', '————————————————————'].join('\n');
-    return [header, ...tradeBlock].join('\n');
+    return [header, ...tradeBlock].join('\n\n');
   }
 
   private async generateStandings(week?: number) {

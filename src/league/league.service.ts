@@ -41,11 +41,9 @@ export class LeagueService {
   }
 
   public async getMatchupsForWeek(week?: number) {
-    const matchups: IMatchup[] = [];
+    this.league = await this.getLeague();
 
-    if (!this.league) {
-      this.league = await this.getLeague();
-    }
+    const matchups: IMatchup[] = [];
 
     const currentWeek = this.league.scoringPeriodId;
     if (!week || week <= 0 || week >= currentWeek) {
@@ -90,9 +88,7 @@ export class LeagueService {
   }
 
   public async getActualStandings() {
-    if (!this.league) {
-      this.league = await this.getLeague();
-    }
+    this.league = await this.getLeague();
 
     const standings = this.league.teams.map((team) => {
       const wins = team.record.overall.wins;
@@ -111,9 +107,8 @@ export class LeagueService {
   }
 
   public async getAllPlayRecords(week?: number) {
-    if (!this.league) {
-      this.league = await this.getLeague();
-    }
+    this.league = await this.getLeague();
+
     const isValidWeekArg =
       !!week && week > 0 && week < this.league.scoringPeriodId;
 
@@ -123,6 +118,7 @@ export class LeagueService {
         : this.getTeamAllPlayRecordForSeason(team);
 
       return {
+        week,
         team,
         wins: record.wins,
         losses: record.losses,
@@ -155,9 +151,7 @@ export class LeagueService {
   }
 
   public async getPlayersOnTradeBlockByTeam() {
-    if (!this.league) {
-      this.league = await this.getLeague();
-    }
+    this.league = await this.getLeague();
 
     const teamsWithPlayersOnTradeBlock: {
       team: ITeam;
@@ -230,9 +224,8 @@ export class LeagueService {
   }
 
   public async getHighestScoringTeamForWeek(week?: number) {
-    if (!this.league) {
-      this.league = await this.getLeague();
-    }
+    this.league = await this.getLeague();
+
     const previousWeek = this.league.scoringPeriodId - 1;
 
     if (!week || week <= 0 || week >= previousWeek) {
@@ -260,9 +253,8 @@ export class LeagueService {
   }
 
   public async getLuckiestTeamForWeek(week?: number) {
-    if (!this.league) {
-      this.league = await this.getLeague();
-    }
+    this.league = await this.getLeague();
+
     const previousWeek = this.league.scoringPeriodId - 1;
 
     if (!week || week <= 0 || week >= previousWeek) {
