@@ -3,7 +3,6 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import {
   ILeagueInfo,
-  IMatchup,
   IMatchupTeam,
   IPlayer,
   ITeam,
@@ -40,31 +39,80 @@ export class LeagueService {
     return data;
   }
 
-  public async getMatchupsForWeek(week?: number) {
+  public async getMatchupsForCurrentWeek(teamAbbrev?: string) {
     this.league = await this.getLeague();
-
-    const matchups: IMatchup[] = [];
-
     const currentWeek = this.league.scoringPeriodId;
-    if (!week || week <= 0 || week >= currentWeek) {
-      week = currentWeek;
-    }
 
-    for (const matchup of this.league.schedule) {
-      if (matchup.matchupPeriodId === week) {
-        const homeTeam = this.getMatchupTeam(matchup.home, this.league.teams);
-        const awayTeam = this.getMatchupTeam(matchup.away, this.league.teams);
+    const relevantMatchups = this.league.schedule.filter(
+      (matchup) => matchup.matchupPeriodId === currentWeek,
+    );
 
-        matchups.push({
-          id: matchup.id,
-          matchupPeriodId: matchup.matchupPeriodId,
-          home: homeTeam,
-          away: awayTeam,
-        });
+    const matchups = relevantMatchups.map((matchup) => {
+      const homeTeam = this.getMatchupTeam(matchup.home, this.league.teams);
+      const awayTeam = this.getMatchupTeam(matchup.away, this.league.teams);
+
+      return {
+        id: matchup.id,
+        matchupPeriodId: matchup.matchupPeriodId,
+        home: {
+          ...homeTeam,
+          threeWeekAvg: this.calculateThreeWeekAverage(
+            homeTeam.teamId,
+            currentWeek,
+          ),
+        },
+        away: {
+          ...awayTeam,
+          threeWeekAvg: this.calculateThreeWeekAverage(
+            awayTeam.teamId,
+            currentWeek,
+          ),
+        },
+      };
+    });
+
+    if (teamAbbrev) {
+      const team = this.league.teams.find(
+        (t) => t.abbrev.toLowerCase() === teamAbbrev.toLowerCase(),
+      );
+      if (team) {
+        return matchups.filter(
+          (matchup) =>
+            matchup.home.teamId === team.id || matchup.away.teamId === team.id,
+        );
       }
     }
 
     return matchups;
+  }
+
+  private calculateThreeWeekAverage(teamId: number, week: number): number {
+    const startWeek = Math.max(1, week - 3);
+    const endWeek = week - 1;
+
+    const teamMatchups = this.league.schedule.filter(
+      (matchup) =>
+        matchup.home.teamId === teamId || matchup.away.teamId === teamId,
+    );
+
+    const teamPoints = teamMatchups
+      .filter(
+        (matchup) =>
+          matchup.matchupPeriodId >= startWeek &&
+          matchup.matchupPeriodId <= endWeek,
+      )
+      .map((matchup) =>
+        matchup.home.teamId === teamId
+          ? matchup.home.totalPoints
+          : matchup.away.totalPoints,
+      );
+
+    const lastThreeWeeksPoints = teamPoints.slice(-3);
+
+    return (
+      lastThreeWeeksPoints.reduce((total, point) => total + point, 0) /
+        lastThreeWeeksPoints.length || 0
+    );
   }
 
   private getMatchupTeam(matchupTeam: IMatchupTeam, teams: ITeam[]) {
@@ -188,7 +236,9 @@ export class LeagueService {
     return teamsWithPlayersOnTradeBlock;
   }
 
-  public getPowerRankings() {
+  public async getPowerRankings() {
+    this.league = await this.getLeague();
+
     const winMatrix: number[][] = [];
 
     const sortedTeams = this.league.teams.slice().sort((a, b) => a.id - b.id);
