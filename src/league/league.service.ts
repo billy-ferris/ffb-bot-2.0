@@ -56,14 +56,14 @@ export class LeagueService {
         matchupPeriodId: matchup.matchupPeriodId,
         home: {
           ...homeTeam,
-          threeWeekAvg: this.calculateThreeWeekAverage(
+          totalPointsLastThreeWeeksAvg: this.calculateThreeWeekAverage(
             homeTeam.teamId,
             currentWeek,
           ),
         },
         away: {
           ...awayTeam,
-          threeWeekAvg: this.calculateThreeWeekAverage(
+          totalPointsThreeWeekAvg: this.calculateThreeWeekAverage(
             awayTeam.teamId,
             currentWeek,
           ),
@@ -108,6 +108,8 @@ export class LeagueService {
       );
 
     const lastThreeWeeksPoints = teamPoints.slice(-3);
+
+    console.log();
 
     return (
       lastThreeWeeksPoints.reduce((total, point) => total + point, 0) /
