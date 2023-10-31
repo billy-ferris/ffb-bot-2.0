@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { LeagueService } from '../league/league.service';
 import { nflTeamIdToNFLTeamAbbreviation } from '../constants';
 import { IPlayer } from '../types';
+import { addOrdinalToNumber } from '../utils';
 
 @Injectable()
 export class MessagesService {
@@ -42,7 +43,10 @@ export class MessagesService {
       await this.leagueService.getPlayersOnTradeBlockByTeam()
     ).map(({ team, players }) => {
       const playerStrings = this.formatPlayerStrings(players);
-      return [team.name.trim(), playerStrings].join(':\n');
+      const teamString = `${team.name.trim()} (${addOrdinalToNumber(
+        team.playoffSeed,
+      )})`;
+      return [teamString, playerStrings].join(':\n');
     });
 
     const header = ['Trade Block', '————————————————————'].join('\n');
